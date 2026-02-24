@@ -1,0 +1,38 @@
+# Build and user-specific
+.vs/
+/bin/
+/obj/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+!**/packages/build/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Publish outputs
+publish/
+
+# OS files
+Thumbs.db
+.DS_Store
