@@ -92,4 +92,85 @@ public partial class MainWindow : Window
             Log("Proxy exception: " + ex.Message);
         }
     }
+
+    private string PrettyJson(string input)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(input);
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            return JsonSerializer.Serialize(doc.RootElement, options);
+        }
+        catch
+        {
+            return input;
+        }
+    }
+
+    private async void ListBtn_Click(object sender, RoutedEventArgs e)
+    {
+        ModelsBox.Text = "Listing models...";
+        var url = UrlBox.Text.Trim();
+        var apiKey = KeyBox.Text.Trim();
+        var headerName = HeaderBox.Text.Trim();
+        var useProxy = UseProxyForList.IsChecked == true;
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
+        {
+            ModelsBox.Text = "Provide both URL and API key.";
+            return;
+        }
+
+        try
+        {
+            using var client = new HttpClient();
+            if (useProxy)
+            {
+                var proxyUrl = "http://localhost:5000/api/invoke";
+                var headerToUse = string.IsNullOrWhiteSpace(headerName) ? "api-key" : headerName;
+                var payloadObj = new { url, apiKey, input = "", headerName = headerToUse, method = "GET" };
+                var json = JsonSerializer.Serialize(payloadObj);
+                var resp = await client.PostAsync(proxyUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                var text = await resp.Content.ReadAsStringAsync();
+                ModelsBox.Text = PrettyJson(text);
+                Log($"List via proxy to {url} header={headerToUse} status={(int)resp.StatusCode}");
+            }
+            else
+            {
+                // try common list endpoints
+                string[] candidates = new[] { 
+                    url.TrimEnd('/') + "/deployments", 
+                    url.TrimEnd('/') + "/models", 
+                    url
+                };
+                HttpResponseMessage? lastResp = null;
+                string lastText = "";
+                foreach (var target in candidates)
+                {
+                    using var req = new HttpRequestMessage(HttpMethod.Get, target);
+                    var headerToUse = string.IsNullOrWhiteSpace(headerName) ? "api-key" : headerName;
+                    if (headerToUse.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && !apiKey.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        req.Headers.Add("Authorization", "Bearer " + apiKey);
+                    else
+                        req.Headers.Add(headerToUse, apiKey);
+
+                    var resp = await client.SendAsync(req);
+                    lastResp = resp;
+                    lastText = await resp.Content.ReadAsStringAsync();
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        ModelsBox.Text = PrettyJson(lastText);
+                        Log($"List direct to {target} header={headerToUse} status={(int)resp.StatusCode}");
+                        return;
+                    }
+                }
+                ModelsBox.Text = PrettyJson(lastText);
+                Log($"List direct attempts finished, last status={(int)(lastResp?.StatusCode ?? 0)}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ModelsBox.Text = "Error: " + ex.Message;
+            Log("List exception: " + ex.Message);
+        }
+    }
 }

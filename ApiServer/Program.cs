@@ -18,6 +18,21 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
     var url = urlElem.GetString() ?? string.Empty;
     var apiKey = keyElem.GetString() ?? string.Empty;
     var input = inputElem.GetString() ?? string.Empty;
+    // Optional method and body for forwarding (default POST)
+    var method = "POST";
+    if (root.TryGetProperty("method", out var methodElem))
+    {
+        var m = methodElem.GetString();
+        if (!string.IsNullOrEmpty(m)) method = m;
+    }
+    string? bodyRaw = null;
+    if (root.TryGetProperty("body", out var bodyElem))
+    {
+        if (bodyElem.ValueKind == JsonValueKind.String)
+            bodyRaw = bodyElem.GetString();
+        else
+            bodyRaw = bodyElem.GetRawText();
+    }
     // Optional: allow caller to specify which header name to use for the API key (default: "api-key")
     var headerName = "api-key";
     if (root.TryGetProperty("headerName", out var headerElem))
@@ -33,7 +48,8 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
     try
     {
         using var client = new HttpClient();
-        using var req = new HttpRequestMessage(HttpMethod.Post, url);
+        var httpMethod = new HttpMethod(method.ToUpperInvariant());
+        using var req = new HttpRequestMessage(httpMethod, url);
         // Forward API key using the requested header name. If caller asked for Authorization
         // and the value doesn't look like a bearer token, add the "Bearer " prefix.
         if (headerName.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && !apiKey.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -45,8 +61,18 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
             req.Headers.Add(headerName, apiKey);
         }
 
-        var payload = JsonSerializer.Serialize(new { input });
-        req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+        if (!httpMethod.Equals(HttpMethod.Get))
+        {
+            if (!string.IsNullOrEmpty(bodyRaw))
+            {
+                req.Content = new StringContent(bodyRaw, Encoding.UTF8, "application/json");
+            }
+            else
+            {
+                var payload = JsonSerializer.Serialize(new { input });
+                req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+            }
+        }
 
         using var resp = await client.SendAsync(req);
         var respText = await resp.Content.ReadAsStringAsync();
