@@ -16,14 +16,7 @@ public partial class MainWindow : Window
 
         private void Log(string text)
         {
-            try
-            {
-                var logDir = Path.Combine(Directory.GetCurrentDirectory(), "LOG");
-                Directory.CreateDirectory(logDir);
-                var path = Path.Combine(logDir, "wpfclient.log");
-                File.AppendAllText(path, $"[{DateTime.UtcNow:O}] {text}{Environment.NewLine}");
-            }
-            catch { }
+            Logger.Log(text);
         }
 
     private async void DirectBtn_Click(object sender, RoutedEventArgs e)
