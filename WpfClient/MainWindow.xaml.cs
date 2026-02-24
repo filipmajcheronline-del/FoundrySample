@@ -46,8 +46,17 @@ public partial class MainWindow : Window
             {
                 req.Headers.Add(headerToUse, apiKey);
             }
-            var payload = JsonSerializer.Serialize(new { input });
-            req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+            // If calling Azure/OpenAI chat completions directly, wrap input in messages
+            if (url.IndexOf("/openai/deployments/", StringComparison.OrdinalIgnoreCase) >= 0 && url.IndexOf("/chat/completions", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                var chatPayload = JsonSerializer.Serialize(new { messages = new[] { new { role = "user", content = input } } });
+                req.Content = new StringContent(chatPayload, Encoding.UTF8, "application/json");
+            }
+            else
+            {
+                var payload = JsonSerializer.Serialize(new { input });
+                req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+            }
             var resp = await client.SendAsync(req);
             var text = await resp.Content.ReadAsStringAsync();
             OutputBox.Text = text;

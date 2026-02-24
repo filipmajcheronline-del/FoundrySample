@@ -69,8 +69,17 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
             }
             else
             {
-                var payload = JsonSerializer.Serialize(new { input });
-                req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                // If forwarding to Azure/OpenAI chat completions, wrap `input` into `messages`
+                if (url.IndexOf("/openai/deployments/", StringComparison.OrdinalIgnoreCase) >= 0 && url.IndexOf("/chat/completions", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var chatPayload = JsonSerializer.Serialize(new { messages = new[] { new { role = "user", content = input } } });
+                    req.Content = new StringContent(chatPayload, Encoding.UTF8, "application/json");
+                }
+                else
+                {
+                    var payload = JsonSerializer.Serialize(new { input });
+                    req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                }
             }
         }
 
