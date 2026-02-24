@@ -22,3 +22,29 @@ dotnet run --project WpfClient
 Usage notes:
 - The proxy and client use a header named `api-key` when forwarding the API key. Some Foundry endpoints might expect `Authorization: Bearer <token>` or a different header  adjust `ApiServer/Program.cs` and `WpfClient/MainWindow.xaml.cs` accordingly.
 - The sample sends a JSON body `{ "input": "..." }` to the Foundry URL. Change the payload shape as needed for your model endpoint.
+
+Header name, logging and autotest
+- **Header name**: The client UI now exposes a `Header name` field (defaults to `api-key`). To send an Authorization bearer token, set `Header name` to `Authorization` and either enter `Bearer <token>` in the API key field or the app will add the `Bearer ` prefix automatically.
+- **Proxy payload**: The proxy accepts an optional `headerName` property in the JSON you post to `/api/invoke`. Example payload:
+
+```
+{
+	"url": "https://your-foundry-endpoint",
+	"apiKey": "<token-or-key>",
+	"input": "your input",
+	"headerName": "Authorization" // optional, defaults to "api-key"
+}
+```
+
+- **Logs**: Both projects write rotating logs to the workspace `LOG` folder:
+	- `LOG/api.log` — entries from the API proxy (incoming requests, forwarded responses, errors).
+	- `LOG/wpfclient.log` — entries from the WPF client (direct and proxy calls, autotest runs).
+
+- **Autotest**: The WPF client supports a non-interactive autotest mode which performs a quick direct + proxy POST and exits. Useful to verify connectivity and generate logs:
+
+```powershell
+dotnet run --project ApiServer --urls http://localhost:5000
+dotnet run --project WpfClient -- --autotest
+```
+
+These commands start the API proxy and run the WPF autotest that issues one direct request and one proxied request; check `LOG` afterwards for results.
