@@ -114,6 +114,7 @@ public partial class MainWindow : Window
         var apiKey = KeyBox.Text.Trim();
         var headerName = HeaderBox.Text.Trim();
         var useProxy = UseProxyForList.IsChecked == true;
+        var modelsPath = ModelsPathBox.Text?.Trim();
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
         {
             ModelsBox.Text = "Provide both URL and API key.";
@@ -123,6 +124,23 @@ public partial class MainWindow : Window
         try
         {
             using var client = new HttpClient();
+            if (!string.IsNullOrEmpty(modelsPath))
+            {
+                // Use explicit models path provided by user
+                var target = url.TrimEnd('/') + (modelsPath.StartsWith("/") ? modelsPath : "/" + modelsPath);
+                using var req = new HttpRequestMessage(HttpMethod.Get, target);
+                var headerToUse = string.IsNullOrWhiteSpace(headerName) ? "api-key" : headerName;
+                if (headerToUse.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && !apiKey.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    req.Headers.Add("Authorization", "Bearer " + apiKey);
+                else
+                    req.Headers.Add(headerToUse, apiKey);
+
+                var resp = await client.SendAsync(req);
+                var text = await resp.Content.ReadAsStringAsync();
+                ModelsBox.Text = PrettyJson(text);
+                Log($"List direct to {target} header={headerToUse} status={(int)resp.StatusCode}");
+                return;
+            }
             if (useProxy)
             {
                 var proxyUrl = "http://localhost:5000/api/invoke";
