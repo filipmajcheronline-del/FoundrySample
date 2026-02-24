@@ -14,6 +14,28 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+        private void LoadFileBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog();
+                dlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+                var ok = dlg.ShowDialog();
+                if (ok == true)
+                {
+                    var path = dlg.FileName;
+                    var text = System.IO.File.ReadAllText(path);
+                    InputBox.Text = text;
+                    Log($"Loaded input from file: {System.IO.Path.GetFileName(path)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("LoadFile error: " + ex.Message);
+                OutputBox.Text = "Error loading file: " + ex.Message;
+            }
+        }
+
         private void Log(string text)
         {
             Logger.Log(text);

@@ -8,6 +8,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -30,8 +31,10 @@
         <Label Grid.Row="3" Grid.Column="0" Content="Input:" Margin="0,0,8,6" VerticalAlignment="Top" />
         <TextBox x:Name="InputBox" Grid.Row="3" Grid.Column="1" Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,6" />
 
-        <Label Grid.Row="4" Grid.Column="0" Content="Output:" Margin="0,0,8,6" VerticalAlignment="Top" />
-        <TextBox x:Name="OutputBox" Grid.Row="4" Grid.Column="1" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
+        <Button Grid.Row="4" Grid.Column="1" HorizontalAlignment="Left" Margin="0,0,0,6" Width="140" Click="LoadFileBtn_Click">Load from file...</Button>
+
+        <Label Grid.Row="5" Grid.Column="0" Content="Output:" Margin="0,0,8,6" VerticalAlignment="Top" />
+        <TextBox x:Name="OutputBox" Grid.Row="5" Grid.Column="1" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
 
         <Label Grid.Row="5" Grid.Column="0" Content="Models path (optional):" Margin="0,0,8,6" VerticalAlignment="Center" />
         <TextBox x:Name="ModelsPathBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,6" Text="/openai/deployments?api-version=2023-11-15" />
