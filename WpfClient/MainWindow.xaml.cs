@@ -48,6 +48,7 @@ public partial class MainWindow : Window
         var apiKey = KeyBox.Text.Trim();
         var headerName = HeaderBox.Text.Trim();
         var input = InputBox.Text ?? string.Empty;
+        var system = SystemBox.Text ?? string.Empty;
 
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(apiKey))
         {
@@ -68,10 +69,13 @@ public partial class MainWindow : Window
             {
                 req.Headers.Add(headerToUse, apiKey);
             }
-            // If calling Azure/OpenAI chat completions directly, wrap input in messages
+            // If calling Azure/OpenAI chat completions directly, wrap system+input in messages
             if (url.IndexOf("/openai/deployments/", StringComparison.OrdinalIgnoreCase) >= 0 && url.IndexOf("/chat/completions", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                var chatPayload = JsonSerializer.Serialize(new { messages = new[] { new { role = "user", content = input } } });
+                var messagesList = new System.Collections.Generic.List<object>();
+                if (!string.IsNullOrWhiteSpace(system)) messagesList.Add(new { role = "system", content = system });
+                messagesList.Add(new { role = "user", content = input });
+                var chatPayload = JsonSerializer.Serialize(new { messages = messagesList });
                 req.Content = new StringContent(chatPayload, Encoding.UTF8, "application/json");
             }
             else
@@ -110,7 +114,8 @@ public partial class MainWindow : Window
             using var client = new HttpClient();
             var proxyUrl = "http://localhost:5000/api/invoke";
             var headerToUse = string.IsNullOrWhiteSpace(headerName) ? "api-key" : headerName;
-            var payloadObj = new { url, apiKey, input, headerName = headerToUse };
+            var system = SystemBox.Text ?? string.Empty;
+            var payloadObj = new { url, apiKey, system, input, headerName = headerToUse };
             var json = JsonSerializer.Serialize(payloadObj);
             var resp = await client.PostAsync(proxyUrl, new StringContent(json, Encoding.UTF8, "application/json"));
             var text = await resp.Content.ReadAsStringAsync();

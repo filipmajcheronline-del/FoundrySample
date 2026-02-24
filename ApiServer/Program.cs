@@ -18,6 +18,13 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
     var url = urlElem.GetString() ?? string.Empty;
     var apiKey = keyElem.GetString() ?? string.Empty;
     var input = inputElem.GetString() ?? string.Empty;
+    // Optional system message
+    var system = string.Empty;
+    if (root.TryGetProperty("system", out var sysElem))
+    {
+        var s = sysElem.GetString();
+        if (!string.IsNullOrEmpty(s)) system = s;
+    }
     // Optional method and body for forwarding (default POST)
     var method = "POST";
     if (root.TryGetProperty("method", out var methodElem))
@@ -69,10 +76,13 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
             }
             else
             {
-                // If forwarding to Azure/OpenAI chat completions, wrap `input` into `messages`
+                // If forwarding to Azure/OpenAI chat completions, wrap `system`+`input` into `messages`
                 if (url.IndexOf("/openai/deployments/", StringComparison.OrdinalIgnoreCase) >= 0 && url.IndexOf("/chat/completions", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    var chatPayload = JsonSerializer.Serialize(new { messages = new[] { new { role = "user", content = input } } });
+                    var messagesList = new System.Collections.Generic.List<object>();
+                    if (!string.IsNullOrWhiteSpace(system)) messagesList.Add(new { role = "system", content = system });
+                    messagesList.Add(new { role = "user", content = input });
+                    var chatPayload = JsonSerializer.Serialize(new { messages = messagesList });
                     req.Content = new StringContent(chatPayload, Encoding.UTF8, "application/json");
                 }
                 else
