@@ -59,7 +59,7 @@ public partial class MainWindow : Window
             }
             var resp = await client.SendAsync(req);
             var text = await resp.Content.ReadAsStringAsync();
-            OutputBox.Text = text;
+            OutputBox.Text = ExtractAssistantContent(text);
             Log($"Direct POST to {url} header={headerToUse} apiKey={(apiKey.Length>4?"****":"<short>")} status={(int)resp.StatusCode}");
         }
         catch (Exception ex)
@@ -92,7 +92,7 @@ public partial class MainWindow : Window
             var json = JsonSerializer.Serialize(payloadObj);
             var resp = await client.PostAsync(proxyUrl, new StringContent(json, Encoding.UTF8, "application/json"));
             var text = await resp.Content.ReadAsStringAsync();
-            OutputBox.Text = text;
+            OutputBox.Text = ExtractAssistantContent(text);
             Log($"Proxy POST to {proxyUrl} -> target {url} header={headerToUse} status={(int)resp.StatusCode}");
         }
         catch (Exception ex)
@@ -114,6 +114,36 @@ public partial class MainWindow : Window
         {
             return input;
         }
+    }
+
+    private string ExtractAssistantContent(string respText)
+    {
+        if (string.IsNullOrWhiteSpace(respText)) return respText;
+        try
+        {
+            using var doc = JsonDocument.Parse(respText);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
+            {
+                var first = choices[0];
+                if (first.ValueKind == JsonValueKind.Object)
+                {
+                    // Newer chat response: choices[0].message.content
+                    if (first.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.Object && message.TryGetProperty("content", out var content))
+                    {
+                        if (content.ValueKind == JsonValueKind.String) return content.GetString() ?? respText;
+                        return content.ToString();
+                    }
+                    // Older style: choices[0].text
+                    if (first.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+                    {
+                        return textProp.GetString() ?? respText;
+                    }
+                }
+            }
+        }
+        catch { }
+        return respText;
     }
 
     private async void ListBtn_Click(object sender, RoutedEventArgs e)
