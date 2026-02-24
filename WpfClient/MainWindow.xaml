@@ -29,27 +29,19 @@
         <TextBox x:Name="HeaderBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" Text="api-key" />
 
         <Label Grid.Row="3" Grid.Column="0" Content="System:" Margin="0,0,8,6" VerticalAlignment="Top" />
-        <TextBox x:Name="SystemBox" Grid.Row="3" Grid.Column="1" Height="40" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,6" />
+        <TextBox x:Name="SystemBox" Grid.Row="3" Grid.Column="1" Height="40" TextWrapping="Wrap" AcceptsReturn="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" />
 
         <Label Grid.Row="4" Grid.Column="0" Content="Input:" Margin="0,0,8,6" VerticalAlignment="Top" />
-        <TextBox x:Name="InputBox" Grid.Row="4" Grid.Column="1" Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,6" />
+        <TextBox x:Name="InputBox" Grid.Row="4" Grid.Column="1" Height="80" TextWrapping="Wrap" AcceptsReturn="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" />
 
-        <Button Grid.Row="5" Grid.Column="1" HorizontalAlignment="Left" Margin="0,0,0,6" Width="140" Click="LoadFileBtn_Click">Load from file...</Button>
+        <Button Grid.Row="5" Grid.Column="1" HorizontalAlignment="Left" Margin="0,0,0,6" Width="160" Click="LoadFileBtn_Click">Load from file...</Button>
 
         <Label Grid.Row="6" Grid.Column="0" Content="Output:" Margin="0,0,8,6" VerticalAlignment="Top" />
-        <TextBox x:Name="OutputBox" Grid.Row="6" Grid.Column="1" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
-
-        <Label Grid.Row="7" Grid.Column="0" Content="Models path (optional):" Margin="0,0,8,6" VerticalAlignment="Center" />
-        <TextBox x:Name="ModelsPathBox" Grid.Row="7" Grid.Column="1" Margin="0,0,0,6" Text="/openai/deployments?api-version=2023-11-15" />
-
-        <Label Grid.Row="6" Grid.Column="0" Content="Models:" Margin="0,0,8,6" VerticalAlignment="Top" />
-        <TextBox x:Name="ModelsBox" Grid.Row="6" Grid.Column="1" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Height="120" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" />
+        <TextBox x:Name="OutputBox" Grid.Row="6" Grid.Column="1" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" />
 
         <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button x:Name="DirectBtn" Content="Call Foundry (Direct)" Width="160" Margin="0,0,8,0" Click="DirectBtn_Click" />
             <Button x:Name="ProxyBtn" Content="Call via Local API Server" Width="180" Margin="0,0,8,0" Click="ProxyBtn_Click" />
-            <CheckBox x:Name="UseProxyForList" Content="Use proxy" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <Button x:Name="ListBtn" Content="List Models" Width="120" Click="ListBtn_Click" />
         </StackPanel>
     </Grid>
 </Window>
