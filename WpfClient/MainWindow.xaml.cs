@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using System.IO;
 
 namespace WpfClient;
 
@@ -12,6 +13,18 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+        private void Log(string text)
+        {
+            try
+            {
+                var logDir = Path.Combine(Directory.GetCurrentDirectory(), "LOG");
+                Directory.CreateDirectory(logDir);
+                var path = Path.Combine(logDir, "wpfclient.log");
+                File.AppendAllText(path, $"[{DateTime.UtcNow:O}] {text}{Environment.NewLine}");
+            }
+            catch { }
+        }
 
     private async void DirectBtn_Click(object sender, RoutedEventArgs e)
     {
@@ -45,10 +58,12 @@ public partial class MainWindow : Window
             var resp = await client.SendAsync(req);
             var text = await resp.Content.ReadAsStringAsync();
             OutputBox.Text = text;
+            Log($"Direct POST to {url} header={headerToUse} apiKey={(apiKey.Length>4?"****":"<short>")} status={(int)resp.StatusCode}");
         }
         catch (Exception ex)
         {
             OutputBox.Text = "Error: " + ex.Message;
+            Log("Direct exception: " + ex.Message);
         }
     }
 
@@ -76,10 +91,12 @@ public partial class MainWindow : Window
             var resp = await client.PostAsync(proxyUrl, new StringContent(json, Encoding.UTF8, "application/json"));
             var text = await resp.Content.ReadAsStringAsync();
             OutputBox.Text = text;
+            Log($"Proxy POST to {proxyUrl} -> target {url} header={headerToUse} status={(int)resp.StatusCode}");
         }
         catch (Exception ex)
         {
             OutputBox.Text = "Error: " + ex.Message;
+            Log("Proxy exception: " + ex.Message);
         }
     }
 }

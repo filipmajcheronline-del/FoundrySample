@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -25,6 +26,22 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
         if (!string.IsNullOrEmpty(hn)) headerName = hn;
     }
 
+    // Prepare logging
+    var logDir = Path.Combine(Directory.GetCurrentDirectory(), "LOG");
+    Directory.CreateDirectory(logDir);
+    static async Task AppendLogAsync(string path, string text)
+    {
+        try
+        {
+            await File.AppendAllTextAsync(path, text + Environment.NewLine);
+        }
+        catch { }
+    }
+    var apiLogPath = Path.Combine(logDir, "api.log");
+    // Log incoming request (mask apiKey except last 4 chars)
+    var maskedKey = apiKey.Length > 4 ? new string('*', apiKey.Length - 4) + apiKey.Substring(apiKey.Length - 4) : apiKey;
+    await AppendLogAsync(apiLogPath, $"[{DateTime.UtcNow:O}] Incoming invoke: url={url} headerName={headerName} apiKey={maskedKey} input={input}");
+
     try
     {
         using var client = new HttpClient();
@@ -45,6 +62,9 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
 
         using var resp = await client.SendAsync(req);
         var respText = await resp.Content.ReadAsStringAsync();
+        // Log remote response (truncate body to 2000 chars)
+        var bodySnippet = respText?.Length > 2000 ? respText.Substring(0, 2000) + "...[truncated]" : respText;
+        await AppendLogAsync(apiLogPath, $"[{DateTime.UtcNow:O}] Forwarded to {url} returned {(int)resp.StatusCode} {resp.ReasonPhrase}: {bodySnippet}");
         // Propagate the remote status code to the caller and return the body and content-type
         request.HttpContext.Response.StatusCode = (int)resp.StatusCode;
         var contentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
@@ -52,6 +72,7 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
     }
     catch (Exception ex)
     {
+        await AppendLogAsync(apiLogPath, $"[{DateTime.UtcNow:O}] Exception: {ex}");
         return Results.Problem(ex.Message);
     }
 });
