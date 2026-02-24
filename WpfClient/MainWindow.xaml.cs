@@ -154,12 +154,29 @@ public partial class MainWindow : Window
             }
             else
             {
-                // try common list endpoints
-                string[] candidates = new[] { 
-                    url.TrimEnd('/') + "/deployments", 
-                    url.TrimEnd('/') + "/models", 
-                    url
-                };
+                // Build candidate endpoints. Prefer Azure Foundry / OpenAI-style endpoints when detected.
+                var baseUrl = url.TrimEnd('/');
+                var candidatesList = new System.Collections.Generic.List<string>();
+                try
+                {
+                    if (Uri.TryCreate(baseUrl, UriKind.Absolute, out var u))
+                    {
+                        var host = u.Host ?? string.Empty;
+                        if (host.Contains("services.ai.azure.com", StringComparison.OrdinalIgnoreCase) || host.Contains("openai.azure.com", StringComparison.OrdinalIgnoreCase) || baseUrl.Contains("/openai/", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Azure Foundry / Azure OpenAI style
+                            candidatesList.Add(baseUrl + "/openai/deployments?api-version=2023-11-15");
+                            candidatesList.Add(baseUrl + "/openai/models?api-version=2023-11-15");
+                            candidatesList.Add(baseUrl + "/openai/deployments?api-version=2023-05-15");
+                        }
+                    }
+                }
+                catch { }
+                // Generic fallbacks
+                candidatesList.Add(baseUrl + "/deployments");
+                candidatesList.Add(baseUrl + "/models");
+                candidatesList.Add(baseUrl);
+                var candidates = candidatesList.ToArray();
                 HttpResponseMessage? lastResp = null;
                 string lastText = "";
                 foreach (var target in candidates)
