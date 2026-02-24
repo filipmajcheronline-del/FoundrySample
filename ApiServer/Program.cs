@@ -17,20 +17,38 @@ app.MapPost("/api/invoke", async (HttpRequest request) =>
     var url = urlElem.GetString() ?? string.Empty;
     var apiKey = keyElem.GetString() ?? string.Empty;
     var input = inputElem.GetString() ?? string.Empty;
+    // Optional: allow caller to specify which header name to use for the API key (default: "api-key")
+    var headerName = "api-key";
+    if (root.TryGetProperty("headerName", out var headerElem))
+    {
+        var hn = headerElem.GetString();
+        if (!string.IsNullOrEmpty(hn)) headerName = hn;
+    }
 
     try
     {
         using var client = new HttpClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, url);
-        // Forward API key in header named 'api-key'. Some Foundry endpoints may require different headers
-        req.Headers.Add("api-key", apiKey);
+        // Forward API key using the requested header name. If caller asked for Authorization
+        // and the value doesn't look like a bearer token, add the "Bearer " prefix.
+        if (headerName.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && !apiKey.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            req.Headers.Add("Authorization", "Bearer " + apiKey);
+        }
+        else
+        {
+            req.Headers.Add(headerName, apiKey);
+        }
 
         var payload = JsonSerializer.Serialize(new { input });
         req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
         using var resp = await client.SendAsync(req);
         var respText = await resp.Content.ReadAsStringAsync();
-        return Results.Content(respText, resp.Content.Headers.ContentType?.ToString() ?? "application/json");
+        // Propagate the remote status code to the caller and return the body and content-type
+        request.HttpContext.Response.StatusCode = (int)resp.StatusCode;
+        var contentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
+        return Results.Content(respText, contentType);
     }
     catch (Exception ex)
     {
